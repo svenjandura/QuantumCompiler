@@ -6,6 +6,7 @@ import resource
 
 WIDTH = 4
 DEPTH = 3
+MAX_GATES = 100
 
 def my_swap_mapper_recursive(circuit_graph, coupling):
     gates = circuit_graph.serial_layers()
@@ -64,7 +65,9 @@ def score_swap(gates, upcoming_cnots, coupling, layout):
 
 def get_best_action(gates, coupling, layout, depth, width = 5, order_function = score_swap, cnot_count = 0):
     if depth == 0:
-        score = cnot_count
+        upcoming_cnots = get_upcoming_cnots(gates, len(coupling.get_qubits()))
+        dist = calculate_total_distance(upcoming_cnots, coupling, layout)
+        score = cnot_count - 0.01 * dist
         return score, [], gates
 
     upcoming_cnots = get_upcoming_cnots(gates, len(coupling.get_qubits()))
