@@ -3,7 +3,7 @@ import numpy as np
 
 def score():
     base_name = "./out/out"
-    nr = 3
+    nr = 30
 
     res = {}
     for i in range(nr):

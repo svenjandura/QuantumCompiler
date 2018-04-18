@@ -1,0 +1,1 @@
+{"circuits/random9_n5_d5.qasm": {"optimizer_time": 3.105524055, "sim_time_orig": 0.009922252000000187, "cost_original": 360, "sim_time_opti": 0.013022513000000124, "coupling_correct_original": false, "state_correct_optimized": true, "cost_reference": 710, "reference_time": 2.761608456, "coupling_correct_reference": true, "coupling_correct_optimized": true, "cost_optimized": 571}}
