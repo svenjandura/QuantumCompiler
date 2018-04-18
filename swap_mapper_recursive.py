@@ -6,7 +6,7 @@ import resource
 
 WIDTH = 4
 DEPTH = 3
-MAX_GATES = 100
+MAX_GATES = 200
 
 def my_swap_mapper_recursive(circuit_graph, coupling):
     gates = circuit_graph.serial_layers()
@@ -103,7 +103,15 @@ def execute_free_gates(gates, coupling, layout):
     cnot_count = 0
     executed_gates = []
     remaining_gates = []
-    for gate in gates:
+
+    interesting_gates = []
+    ignored_gates = []
+    if len(gates)<=MAX_GATES:
+        interesting_gates = gates
+    else:
+        interesting_gates = gates[:MAX_GATES]
+        ignored_gates = gates[MAX_GATES:]
+    for gate in interesting_gates:
         if len(gate["partition"][0]) == 1:
             q = gate["partition"][0][0]
             if q in blocked_qubits:
@@ -121,7 +129,7 @@ def execute_free_gates(gates, coupling, layout):
                     blocked_qubits.append(q1)
                 if q2 not in blocked_qubits:
                     blocked_qubits.append(q2)
-    return executed_gates, remaining_gates, cnot_count
+    return executed_gates, remaining_gates + ignored_gates, cnot_count
 
 def reverse_layout_lookup(layout, qubit):
     for q in layout:
@@ -140,6 +148,8 @@ def get_upcoming_cnots(gates, qubit_number, start=0):
     upcoming_cnots = []
     used_qubits = []
     for i in range(start, len(gates)):
+        if i >= MAX_GATES:
+            break
         gate = gates[i]
         if (not gate["partition"]==[]) and len(gate["partition"][0])==2:
             q1,q2 = qubits_from_cnot(gate)

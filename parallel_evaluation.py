@@ -26,8 +26,11 @@ for filename, cmap in test_circuit_filenames.items():
 
 result = evaluate(compiler_function, test_circuits, verbose=True, backend = backend)
 for circ in result:
-    result[circ]['coupling_correct_optimized'] = bool(result[circ]['coupling_correct_optimized'])
-    result[circ]['coupling_correct_original'] = bool(result[circ]['coupling_correct_original'])
-    result[circ]['coupling_correct_reference'] = bool(result[circ]['coupling_correct_reference'])
-    result[circ]['state_correct_optimized'] = bool(result[circ]['state_correct_optimized'])
+    #result[circ]['coupling_correct_optimized'] = bool(result[circ]['coupling_correct_optimized'])
+    #result[circ]['coupling_correct_original'] = bool(result[circ]['coupling_correct_original'])
+    #result[circ]['coupling_correct_reference'] = bool(result[circ]['coupling_correct_reference'])
+    #result[circ]['state_correct_optimized'] = bool(result[circ]['state_correct_optimized'])
+    for name in result[circ]:
+        if isinstance(result[circ][name], bool):
+            result[circ][name] = bool(result[circ][name])
 print(json.dumps(result))
