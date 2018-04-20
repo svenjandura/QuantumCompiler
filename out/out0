@@ -1,1 +1,9 @@
-{"circuits/random0_n5_d5.qasm": {"cost_reference": 504, "coupling_correct_original": false, "cost_optimized": 400, "sim_time_orig": 0.01005328900000002, "coupling_correct_reference": true, "reference_time": 2.775330703, "cost_original": 360, "optimizer_time": 3.710180886, "coupling_correct_optimized": true, "state_correct_optimized": true, "sim_time_opti": 0.010770237999999877}}
+{'circuits/random0_n5_d5.qasm': {'cost_original': 360,
+                                 'cost_reference': 504,
+                                 'coupling_correct_original': False,
+                                 'coupling_correct_reference': True,
+                                 'optimizer_time': -1,
+                                 'reference_time': 4.588314327,
+                                 'sim_time_opti': 0.016748025999999916,
+                                 'sim_time_orig': 0.014787479000000214,
+                                 'state_correct_optimized': False}}

@@ -7,6 +7,7 @@ import resource
 WIDTH = 4
 DEPTH = 3
 MAX_GATES = 200
+USE_INITIAL_REMAP = True
 
 def my_swap_mapper_recursive(circuit_graph, coupling):
     gates = circuit_graph.serial_layers()
@@ -21,6 +22,14 @@ def my_swap_mapper_recursive(circuit_graph, coupling):
     gates = gates[:count]
 
     qasm_string = ""
+
+    if USE_INITIAL_REMAP:
+        _ , initial_swaps, _ = get_best_action(gates, coupling, layout, 4,  execute_gates = False)
+        for edge in initial_swaps:
+            swaped_layout = deepcopy(layout)
+            swaped_layout[reverse_layout_lookup(layout, edge[0][0])] = edge[0][1]
+            swaped_layout[reverse_layout_lookup(layout, edge[0][1])] = edge[0][0]
+            layout = swaped_layout
 
     executed_gates, gates, cnots = execute_free_gates(gates, coupling, layout)
     for gate in executed_gates:
@@ -60,10 +69,11 @@ def my_swap_mapper_recursive(circuit_graph, coupling):
 
     return u.execute(), layout
 
+
 def score_swap(gates, upcoming_cnots, coupling, layout):
     return calculate_total_distance(upcoming_cnots, coupling, layout)
 
-def get_best_action(gates, coupling, layout, depth, width = 5, order_function = score_swap, cnot_count = 0):
+def get_best_action(gates, coupling, layout, depth, width = 5, order_function = score_swap, cnot_count = 0, execute_gates = True):
     if depth == 0:
         upcoming_cnots = get_upcoming_cnots(gates, len(coupling.get_qubits()))
         dist = calculate_total_distance(upcoming_cnots, coupling, layout)
@@ -72,6 +82,7 @@ def get_best_action(gates, coupling, layout, depth, width = 5, order_function = 
 
     upcoming_cnots = get_upcoming_cnots(gates, len(coupling.get_qubits()))
     ordered_swaps = []
+
 
     for edge in coupling.get_edges():
         trial_layout = deepcopy(layout)
@@ -89,7 +100,12 @@ def get_best_action(gates, coupling, layout, depth, width = 5, order_function = 
     best_remaining_gates = []
     for i in range(min(width, len(ordered_swaps))):
         trial_layout = ordered_swaps[i]["layout"]
-        executed_gates, remaining_gates, cnots = execute_free_gates(gates, coupling, trial_layout)
+
+        executed_gates = []
+        remaining_gates = gates
+        cnots = 0
+        if execute_gates:
+            executed_gates, remaining_gates, cnots = execute_free_gates(gates, coupling, trial_layout)
         score, next_executions, still_remaining_gates = get_best_action(
                 remaining_gates, coupling, trial_layout, depth-1, cnot_count = cnots + cnot_count)
         if score > best_score:

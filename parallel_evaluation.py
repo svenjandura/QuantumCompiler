@@ -25,7 +25,7 @@ for filename, cmap in test_circuit_filenames.items():
         test_circuits[filename] = {"qasm": qasm, "coupling_map": cmap}
 
 result = evaluate(compiler_function, test_circuits, verbose=True, backend = backend)
-#pprint(result)
+pprint(result)
 
 for circ in result:
     result[circ]['coupling_correct_optimized'] = bool(result[circ]['coupling_correct_optimized'])
