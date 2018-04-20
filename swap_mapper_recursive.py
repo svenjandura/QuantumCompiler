@@ -7,6 +7,7 @@ import resource
 WIDTH = 4
 DEPTH = 3
 MAX_GATES = 200
+STEP_SIZE = 2
 USE_INITIAL_REMAP = True
 
 def my_swap_mapper_recursive(circuit_graph, coupling):
@@ -38,19 +39,20 @@ def my_swap_mapper_recursive(circuit_graph, coupling):
     while len(gates) > 0:
         #print(len(gates))
         score, executions, remaining = get_best_action(gates, coupling, layout, DEPTH, width = WIDTH)
-        edge = executions[0][0]
-        qasm_string += "swap %s[%d],%s[%d]; " % (edge[0][0],
-                                                 edge[0][1],
-                                                 edge[1][0],
-                                                 edge[1][1])
-        swaped_layout = deepcopy(layout)
-        swaped_layout[reverse_layout_lookup(layout, edge[0])] = edge[1]
-        swaped_layout[reverse_layout_lookup(layout, edge[1])] = edge[0]
-        layout = swaped_layout
+        for i in range(STEP_SIZE):
+            edge = executions[i][0]
+            qasm_string += "swap %s[%d],%s[%d]; " % (edge[0][0],
+                                                    edge[0][1],
+                                                    edge[1][0],
+                                                    edge[1][1])
+            swaped_layout = deepcopy(layout)
+            swaped_layout[reverse_layout_lookup(layout, edge[0])] = edge[1]
+            swaped_layout[reverse_layout_lookup(layout, edge[1])] = edge[0]
+            layout = swaped_layout
 
-        for gate in executions[0][1]:
-            qasm_string += gate["graph"].qasm(no_decls = True, aliases = layout)
-            gates.remove(gate)
+            for gate in executions[i][1]:
+                qasm_string += gate["graph"].qasm(no_decls = True, aliases = layout)
+                gates.remove(gate)
 
     swap_decl = "gate swap a,b { cx a,b; cx b,a; cx a,b;}"
     end_nodes_qasm = ""
