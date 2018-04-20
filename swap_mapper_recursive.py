@@ -7,7 +7,7 @@ import resource
 WIDTH = 4
 DEPTH = 3
 MAX_GATES = 200
-USE_INITIAL_REMAP = True
+USE_INITIAL_REMAP = False
 
 def my_swap_mapper_recursive(circuit_graph, coupling):
     gates = circuit_graph.serial_layers()
