@@ -7,12 +7,13 @@ import resource
 WIDTH = 4
 DEPTH = 3
 MAX_GATES = 200
-USE_INITIAL_REMAP = False
+
 
 def my_swap_mapper_recursive(circuit_graph, coupling):
     gates = circuit_graph.serial_layers()
     qubits = coupling.get_qubits()
     layout = {qubit : qubit for qubit in qubits}
+    layout_copy = deepcopy(layout)
 
     end_nodes = []
     count = 0
@@ -20,42 +21,64 @@ def my_swap_mapper_recursive(circuit_graph, coupling):
         count += 1
     end_nodes = gates[count:]
     gates = gates[:count]
+    gates_copy = deepcopy(gates)
 
     qasm_string = ""
 
-    if USE_INITIAL_REMAP:
-        _ , initial_swaps, _ = get_best_action(gates, coupling, layout, 4,  execute_gates = False)
-        for edge in initial_swaps:
-            swaped_layout = deepcopy(layout)
-            swaped_layout[reverse_layout_lookup(layout, edge[0][0])] = edge[0][1]
-            swaped_layout[reverse_layout_lookup(layout, edge[0][1])] = edge[0][0]
-            layout = swaped_layout
-
-    executed_gates, gates, cnots = execute_free_gates(gates, coupling, layout)
+    """executed_gates, gates, cnots = execute_free_gates(gates, coupling, layout)
     for gate in executed_gates:
         qasm_string += gate["graph"].qasm(no_decls = True, aliases = layout)
 
     while len(gates) > 0:
         #print(len(gates))
         score, executions, remaining = get_best_action(gates, coupling, layout, DEPTH, width = WIDTH)
-        edge = executions[0][0]
-        qasm_string += "swap %s[%d],%s[%d]; " % (edge[0][0],
-                                                 edge[0][1],
-                                                 edge[1][0],
-                                                 edge[1][1])
-        swaped_layout = deepcopy(layout)
-        swaped_layout[reverse_layout_lookup(layout, edge[0])] = edge[1]
-        swaped_layout[reverse_layout_lookup(layout, edge[1])] = edge[0]
-        layout = swaped_layout
+        for i in range(1):
+            edge = executions[i][0]
+            qasm_string += "swap %s[%d],%s[%d]; " % (edge[0][0],
+                                                    edge[0][1],
+                                                    edge[1][0],
+                                                    edge[1][1])
+            swaped_layout = deepcopy(layout)
+            swaped_layout[reverse_layout_lookup(layout, edge[0])] = edge[1]
+            swaped_layout[reverse_layout_lookup(layout, edge[1])] = edge[0]
+            layout = swaped_layout
 
-        for gate in executions[0][1]:
-            qasm_string += gate["graph"].qasm(no_decls = True, aliases = layout)
-            gates.remove(gate)
+            for gate in executions[i][1]:
+                qasm_string += gate["graph"].qasm(no_decls = True, aliases = layout)
+                gates.remove(gate)
 
     swap_decl = "gate swap a,b { cx a,b; cx b,a; cx a,b;}"
     end_nodes_qasm = ""
-    for node in end_nodes:
-        end_nodes_qasm += node["graph"].qasm(no_decls=True, aliases = layout)
+    for n in end_nodes:
+        end_nodes_qasm += n["graph"].qasm(no_decls=True, aliases =layout)
+    qasm_string = circuit_graph.qasm(decls_only=True)+swap_decl+qasm_string+end_nodes_qasm
+
+    print(qasm_string)
+    print("")"""
+
+    node = build_tree(None, gates_copy, coupling, layout_copy, DEPTH, width = WIDTH)
+    run = True
+    while run:
+        run = node["remaining_gates"] != []
+        if node["swap"] != None:
+            edge = node["swap"]
+            qasm_string += "swap %s[%d],%s[%d]; " % (edge[0][0],
+                                                    edge[0][1],
+                                                    edge[1][0],
+                                                    edge[1][1])
+        for gate in node["executed_gates"]:
+            qasm_string += gate["graph"].qasm(no_decls = True, aliases = node["layout"])
+        last_layout = node["layout"]
+        for n in node["next_nodes"]:
+            if n["score"] == node["score"]:
+                node = n
+                break
+        update_tree(node, coupling, width=WIDTH)
+
+    swap_decl = "gate swap a,b { cx a,b; cx b,a; cx a,b;}"
+    end_nodes_qasm = ""
+    for n in end_nodes:
+        end_nodes_qasm += n["graph"].qasm(no_decls=True, aliases = last_layout)
     qasm_string = circuit_graph.qasm(decls_only=True)+swap_decl+qasm_string+end_nodes_qasm
 
     #print(qasm_string)
@@ -64,8 +87,8 @@ def my_swap_mapper_recursive(circuit_graph, coupling):
     u = unroll.Unroller(ast, unroll.DAGBackend(basis.split(",")))
     #print("Done.")
 
-    #memory_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    #print(memory_usage)
+#    memory_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+#    print(memory_usage)
 
     return u.execute(), layout
 
@@ -73,7 +96,61 @@ def my_swap_mapper_recursive(circuit_graph, coupling):
 def score_swap(gates, upcoming_cnots, coupling, layout):
     return calculate_total_distance(upcoming_cnots, coupling, layout)
 
-def get_best_action(gates, coupling, layout, depth, width = 5, order_function = score_swap, cnot_count = 0, execute_gates = True):
+def build_tree(swap, gates, coupling, layout, depth, width = WIDTH, cnot_count = 0):
+    node = {}
+    node["swap"] = swap
+    node["layout"] = layout
+    executed_gates, remaining_gates, cnots = execute_free_gates(gates, coupling, layout)
+    node["executed_gates"] = executed_gates
+    node["remaining_gates"] = remaining_gates
+    node["cnots"] = cnots + cnot_count
+
+    if depth == 1:
+        upcoming_cnots = get_upcoming_cnots(gates, len(coupling.get_qubits()))
+        dist = calculate_total_distance(upcoming_cnots, coupling, layout)
+        score = cnot_count - 0.01 * dist
+        node["score"] = score
+        node["next_nodes"] = None
+        return node
+
+    node["score"], node["next_nodes"] = do_tree_step(node, coupling, depth, width)
+    return node
+
+def do_tree_step(node, coupling, depth, width=WIDTH):
+    upcoming_cnots = get_upcoming_cnots(node["remaining_gates"], len(coupling.get_qubits()))
+    ordered_swaps = []
+    layout = node["layout"]
+    for edge in coupling.get_edges():
+        trial_layout = deepcopy(layout)
+        trial_layout[reverse_layout_lookup(layout, edge[0])] = edge[1]
+        trial_layout[reverse_layout_lookup(layout, edge[1])] = edge[0]
+        trial_dist = score_swap(node["remaining_gates"], upcoming_cnots, coupling, trial_layout)
+        position = 0
+        for s in ordered_swaps:
+            if s["dist"] <= trial_dist:
+                position += 1
+        ordered_swaps.insert(position, {"dist": trial_dist, "edge": edge, "layout": trial_layout})
+
+    score = -10000
+    next_nodes = []
+    for i in range(min(width, len(ordered_swaps))):
+        n = build_tree(ordered_swaps[i]["edge"], node["remaining_gates"], coupling, ordered_swaps[i]["layout"], depth-1, width=width, cnot_count = node["cnots"])
+        next_nodes.append(n)
+        if n["score"] >= score:
+            score = n["score"]
+    return score, next_nodes
+
+def update_tree(node, coupling, width = WIDTH):
+    if node["next_nodes"] == None:
+        node["score"], node["next_nodes"] = do_tree_step(node, coupling, 2, width)
+    else:
+        node["score"] = -10000
+        for n in node["next_nodes"]:
+            if n["score"] > node["score"]:
+                node["score"] = n["score"]
+
+
+def get_best_action(gates, coupling, layout, depth, width = 5, order_function = score_swap, cnot_count = 0):
     if depth == 0:
         upcoming_cnots = get_upcoming_cnots(gates, len(coupling.get_qubits()))
         dist = calculate_total_distance(upcoming_cnots, coupling, layout)
@@ -100,12 +177,7 @@ def get_best_action(gates, coupling, layout, depth, width = 5, order_function = 
     best_remaining_gates = []
     for i in range(min(width, len(ordered_swaps))):
         trial_layout = ordered_swaps[i]["layout"]
-
-        executed_gates = []
-        remaining_gates = gates
-        cnots = 0
-        if execute_gates:
-            executed_gates, remaining_gates, cnots = execute_free_gates(gates, coupling, trial_layout)
+        executed_gates, remaining_gates, cnots = execute_free_gates(gates, coupling, trial_layout)
         score, next_executions, still_remaining_gates = get_best_action(
                 remaining_gates, coupling, trial_layout, depth-1, cnot_count = cnots + cnot_count)
         if score > best_score:
