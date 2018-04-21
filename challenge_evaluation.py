@@ -340,6 +340,7 @@ def get_layout(qubits = 5):
     filenames = glob(path.join(getcwd(), 'layouts', '*_q' + str(qubits) + '*'))
     if len(filenames) > 0:
         file = filenames[round(rand()*len(filenames)-0.5)]
+        #file = filenames[0]
         return load_coupling(path.basename(file).split('.')[-2])["coupling_map"]
     else:
         return []
