@@ -41,7 +41,7 @@ for filename, cmap in test_circuit_filenames.items():
 
 result = evaluate(compiler_function, test_circuits, verbose=True, backend = backend)
 
-memory_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-print(memory_usage)
+#memory_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+#print(memory_usage)
 
 pprint(result)

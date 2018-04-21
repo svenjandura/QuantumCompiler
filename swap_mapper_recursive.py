@@ -25,7 +25,7 @@ def my_swap_mapper_recursive(circuit_graph, coupling):
 
     qasm_string = ""
 
-    """executed_gates, gates, cnots = execute_free_gates(gates, coupling, layout)
+    executed_gates, gates, cnots = execute_free_gates(gates, coupling, layout)
     for gate in executed_gates:
         qasm_string += gate["graph"].qasm(no_decls = True, aliases = layout)
 
@@ -54,8 +54,9 @@ def my_swap_mapper_recursive(circuit_graph, coupling):
     qasm_string = circuit_graph.qasm(decls_only=True)+swap_decl+qasm_string+end_nodes_qasm
 
     print(qasm_string)
-    print("")"""
+    print("")
 
+    qasm_string = ""
     node = build_tree(None, gates_copy, coupling, layout_copy, DEPTH, width = WIDTH)
     run = True
     while run:
@@ -81,7 +82,7 @@ def my_swap_mapper_recursive(circuit_graph, coupling):
         end_nodes_qasm += n["graph"].qasm(no_decls=True, aliases = last_layout)
     qasm_string = circuit_graph.qasm(decls_only=True)+swap_decl+qasm_string+end_nodes_qasm
 
-    #print(qasm_string)
+    print(qasm_string)
     basis = "u1,u2,u3,cx,id,swap"
     ast = Qasm(data=qasm_string).parse()
     u = unroll.Unroller(ast, unroll.DAGBackend(basis.split(",")))
@@ -136,7 +137,7 @@ def do_tree_step(node, coupling, depth, width=WIDTH):
     for i in range(min(width, len(ordered_swaps))):
         n = build_tree(ordered_swaps[i]["edge"], node["remaining_gates"], coupling, ordered_swaps[i]["layout"], depth-1, width=width, cnot_count = node["cnots"])
         next_nodes.append(n)
-        if n["score"] >= score:
+        if n["score"] > score:
             score = n["score"]
     return score, next_nodes
 
@@ -146,6 +147,7 @@ def update_tree(node, coupling, width = WIDTH):
     else:
         node["score"] = -10000
         for n in node["next_nodes"]:
+            update_tree(n, coupling, width=width)
             if n["score"] > node["score"]:
                 node["score"] = n["score"]
 
