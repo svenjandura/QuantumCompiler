@@ -25,10 +25,10 @@ backend = 'local_qiskit_simulator'
 ex_nr = 1 # examples to add per qubit number. maximum is 10 with the provided circuits
 test_circuit_filenames = {}
 
-for i in range(ex_nr):
-    test_circuit_filenames['circuits/random%d_n5_d5.qasm' % i] = get_layout(5)
 #for i in range(ex_nr):
-#    test_circuit_filenames['circuits/random%d_n16_d16.qasm' % i] = get_layout(16)
+#    test_circuit_filenames['circuits/random%d_n5_d5.qasm' % i] = get_layout(5)
+for i in range(ex_nr):
+    test_circuit_filenames['circuits/random%d_n16_d16.qasm' % i] = get_layout(16)
 #for i in range(ex_nr):
 #    test_circuit_filenames['circuits/random%d_n20_d20.qasm' % i] = get_layout(20)
 

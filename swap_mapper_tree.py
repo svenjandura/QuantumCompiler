@@ -3,22 +3,25 @@ from qiskit.dagcircuit import DAGCircuit
 from qiskit.qasm import Qasm
 from copy import deepcopy
 import resource
+import time
 
 WIDTH = 4
 DEPTH = 3
 MAX_GATES = 200
 
 def my_swap_mapper_tree(circuit_graph, coupling):
-    gates = circuit_graph.serial_layers()
+    gates = read_gates(circuit_graph)
+    #gates = circuit_graph.serial_layers()
     qubits = coupling.get_qubits()
     layout = {qubit : qubit for qubit in qubits}
 
-    end_nodes = []
+
+    """end_nodes = []
     count = 0
     while gates[count]["partition"]!=[]:
         count += 1
     end_nodes = gates[count:]
-    gates = gates[:count]
+    gates = gates[:count]"""
 
     qasm_string = ""
     node = build_tree(None, gates, coupling, layout, DEPTH + 1, width = WIDTH)
@@ -32,7 +35,8 @@ def my_swap_mapper_tree(circuit_graph, coupling):
                                                     edge[1][0],
                                                     edge[1][1])
         for gate in node["executed_gates"]:
-            qasm_string += gate["graph"].qasm(no_decls = True, aliases = node["layout"])
+            #qasm_string += gate["graph"].qasm(no_decls = True, aliases = node["layout"])
+            qasm_string += gate_to_qasm(gate, node["layout"])
         last_layout = node["layout"]
         for n in node["next_nodes"]:
             if n["score"] == node["score"]:
@@ -41,10 +45,17 @@ def my_swap_mapper_tree(circuit_graph, coupling):
         update_tree(node, coupling, width=WIDTH)
 
     swap_decl = "gate swap a,b { cx a,b; cx b,a; cx a,b;}"
-    end_nodes_qasm = ""
+    """end_nodes_qasm = ""
     for n in end_nodes:
-        end_nodes_qasm += n["graph"].qasm(no_decls=True, aliases = last_layout)
-    qasm_string = circuit_graph.qasm(decls_only=True)+swap_decl+qasm_string+end_nodes_qasm
+        end_nodes_qasm += n["graph"].qasm(no_decls=True, aliases = last_layout)"""
+
+    end_str = "barrier "
+    for q in coupling.get_qubits():
+        end_str += "%s[%d]," % q
+    end_str = end_str[:-1]+";\n"
+    for q in circuit_graph.get_qubits():
+        end_str += qubit_to_measure_string(last_layout[q], q[1])
+    qasm_string = circuit_graph.qasm(decls_only=True)+swap_decl+qasm_string+end_str
 
     basis = "u1,u2,u3,cx,id,swap"
     ast = Qasm(data=qasm_string).parse()
@@ -123,8 +134,8 @@ def execute_free_gates(gates, coupling, layout):
         interesting_gates = gates[:MAX_GATES]
         ignored_gates = gates[MAX_GATES:]
     for gate in interesting_gates:
-        if len(gate["partition"][0]) == 1:
-            q = gate["partition"][0][0]
+        if len(gate["qubits"]) == 1:
+            q = gate["qubits"][0]
             if q in blocked_qubits:
                 remaining_gates.append(gate)
             else:
@@ -162,7 +173,7 @@ def get_upcoming_cnots(gates, qubit_number, start=0):
         if i >= MAX_GATES:
             break
         gate = gates[i]
-        if (not gate["partition"]==[]) and len(gate["partition"][0])==2:
+        if len(gate["qubits"])==2:
             q1,q2 = qubits_from_cnot(gate)
             if not (q1 in used_qubits or q2 in used_qubits):
                 upcoming_cnots.append(gate)
@@ -175,4 +186,44 @@ def get_upcoming_cnots(gates, qubit_number, start=0):
     return upcoming_cnots
 
 def qubits_from_cnot(gate):
-    return gate["partition"][0][0], gate["partition"][0][1]
+    return gate["qubits"][0], gate["qubits"][1]
+
+def read_gates(circuit):
+    ignored_lines = 15
+    gates = []
+    measurements = []
+    lines = circuit.qasm().splitlines()
+    l = ignored_lines
+    while True:
+        if(lines[l][:7]=="barrier"):
+            break
+        space_split = lines[l].split(" ")
+        qubit_split = space_split[1][:-1].split(",")
+        g = {"qasm": space_split[0], "qubits": [string_to_qubit(q) for q in qubit_split]}
+        gates.append(g)
+        l += 1
+
+    return gates
+
+def string_to_qubit(qubit_string):
+    splits = qubit_string.split("[")
+    return (splits[0], int(splits[1][:-1]))
+
+def print_mem():
+    memory_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    print(memory_usage)
+
+def print_time():
+    millis = int(round(time.time() * 1000))
+    print(millis)
+
+def gate_to_qasm(gate, layout):
+    qasm_str = gate["qasm"]
+    qasm_str += " "
+    for q in gate["qubits"]:
+        qasm_str += "%s[%d],"%layout[q]
+    qasm_str = qasm_str[:-1] + ";\n"
+    return qasm_str
+
+def qubit_to_measure_string(q, c_num):
+    return "measure %s[%d] -> c[%s];\n" % (q[0], q[1], c_num)

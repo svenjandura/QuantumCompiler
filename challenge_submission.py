@@ -79,6 +79,9 @@ def compiler_function(dag_circuit, coupling_map=None, gate_costs=None):
     initial_layout = None
     coupling = Coupling(coupling_map)
     compiled_dag, final_layout = my_swap_mapper_tree(deepcopy(dag_circuit), coupling)
+    #compiled2 , _ = my_swap_mapper_recursive(deepcopy(dag_circuit), coupling)
+    #print(compiled_dag.qasm()+"\n")
+    #print(compiled2.qasm())
     # Expand swaps
     basis_gates = "u1,u2,u3,cx,id"  # QE target basis
     program_node_circuit = qasm.Qasm(data=compiled_dag.qasm()).parse()
