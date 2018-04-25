@@ -40,6 +40,7 @@ from copy import deepcopy
 from qiskit.mapper import swap_mapper, direction_mapper, cx_cancellation, optimize_1q_gates, Coupling
 from qiskit import qasm, unroll
 from swap_mapper_recursive import my_swap_mapper_recursive
+from swap_mapper_tree import my_swap_mapper_tree
 
 # The following class is the input and output circuit representation for a
 # QISKit compiler
@@ -77,7 +78,7 @@ def compiler_function(dag_circuit, coupling_map=None, gate_costs=None):
     # Example using mapper passes in Qiskit
     initial_layout = None
     coupling = Coupling(coupling_map)
-    compiled_dag, final_layout = my_swap_mapper_recursive(deepcopy(dag_circuit), coupling)
+    compiled_dag, final_layout = my_swap_mapper_tree(deepcopy(dag_circuit), coupling)
     # Expand swaps
     basis_gates = "u1,u2,u3,cx,id"  # QE target basis
     program_node_circuit = qasm.Qasm(data=compiled_dag.qasm()).parse()

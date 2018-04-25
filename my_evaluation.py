@@ -7,6 +7,8 @@ from challenge_evaluation import evaluate, score
 # Possibly useful other helper function
 from challenge_evaluation import qasm_to_dag_circuit, load_coupling, get_layout
 
+from qiskit import QuantumProgram
+
 from pprint import pprint
 import resource
 
@@ -38,6 +40,28 @@ for filename, cmap in test_circuit_filenames.items():
     with open(filename, 'r') as infile:
         qasm = infile.read()
         test_circuits[filename] = {"qasm": qasm, "coupling_map": cmap}
+
+
+"""basis_gates = 'u1,u2,u3,cx,id'
+gate_costs = {'id': 0, 'u1': 0, 'measure': 0, 'reset': 0, 'barrier': 0,
+                  'u2': 1, 'u3': 1, 'U': 1,
+                  'cx': 10, 'CX': 10}
+# Results data structure
+results = {}
+# Load QASM files and extract DAG circuits
+for name, circuit in test_circuits.items():
+    qp = QuantumProgram()
+    qp.load_qasm_text(
+        circuit["qasm"], name, basis_gates=basis_gates)
+    circuit["dag_original"] = qasm_to_dag_circuit(circuit["qasm"], basis_gates=basis_gates)
+    test_circuits[name] = circuit
+    memory_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    print(memory_usage)
+    compiler_function(circuit["dag_original"], circuit["coupling_map"], gate_costs)
+    memory_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    print(memory_usage)
+    results[name] = {}  # build empty result dict to be filled later
+    #compiler_function()"""
 
 result = evaluate(compiler_function, test_circuits, verbose=True, backend = backend)
 
