@@ -69,16 +69,22 @@ def do_tree_step(node, coupling, depth, width=WIDTH):
     upcoming_cnots = get_upcoming_cnots(node["remaining_gates"], len(coupling.get_qubits()))
     ordered_swaps = []
     layout = node["layout"]
+    current_dist = calculate_total_distance(upcoming_cnots, coupling, layout)
+    two_count = 0
     for edge in coupling.get_edges():
         trial_layout = deepcopy(layout)
         trial_layout[reverse_layout_lookup(layout, edge[0])] = edge[1]
         trial_layout[reverse_layout_lookup(layout, edge[1])] = edge[0]
         trial_dist = score_swap(node["remaining_gates"], upcoming_cnots, coupling, trial_layout)
+        if current_dist - trial_dist == 2:
+            two_count += 1
         position = 0
         for s in ordered_swaps:
             if s["dist"] <= trial_dist:
                 position += 1
         ordered_swaps.insert(position, {"dist": trial_dist, "edge": edge, "layout": trial_layout})
+        if two_count == width:
+            break
 
     score = -10000
     next_nodes = []
