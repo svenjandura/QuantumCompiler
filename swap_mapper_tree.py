@@ -6,7 +6,7 @@ import resource
 import time
 
 WIDTH = 4
-DEPTH = 4
+DEPTH = 3
 MAX_GATES = 200
 
 def my_swap_mapper_tree(circuit_graph, coupling):

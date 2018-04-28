@@ -11,7 +11,7 @@ coupling_maps = [ ["circle_rand_q5","ibmqx2_q5","linear_rand_q5","ibmqx4_q5","li
 qubit_numbers = [5,16,20]
 
 ex_nr = 10
-num = int(sys.argv[1])
+num = int(sys.argv[1])+20
 qnum = num // 10
 circuit_num = num % 10
 circuit_name = 'circuits/random%d_n%d_d%d.qasm' % (circuit_num, qubit_numbers[qnum], qubit_numbers[qnum])
