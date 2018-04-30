@@ -4,6 +4,7 @@ from qiskit.qasm import Qasm
 from copy import deepcopy
 import resource
 import time
+import random
 
 WIDTH = 4
 DEPTH = 3
@@ -67,24 +68,37 @@ def score_swap(gates, upcoming_cnots, coupling, layout):
 
 def do_tree_step(node, coupling, depth, width=WIDTH):
     upcoming_cnots = get_upcoming_cnots(node["remaining_gates"], len(coupling.get_qubits()))
-    ordered_swaps = []
+    #ordered_swaps = []
     layout = node["layout"]
     current_dist = calculate_total_distance(upcoming_cnots, coupling, layout)
-    two_count = 0
+    swaps_by_distance = {}
     for edge in coupling.get_edges():
         trial_layout = deepcopy(layout)
         trial_layout[reverse_layout_lookup(layout, edge[0])] = edge[1]
         trial_layout[reverse_layout_lookup(layout, edge[1])] = edge[0]
         trial_dist = score_swap(node["remaining_gates"], upcoming_cnots, coupling, trial_layout)
-        if current_dist - trial_dist == 2:
-            two_count += 1
-        position = 0
+        diff = current_dist - trial_dist
+        if diff not in swaps_by_distance:
+            swaps_by_distance[diff] = []
+        swaps_by_distance[diff].append({"dist": trial_dist, "edge": edge, "layout": trial_layout})
+        """position = 0
         for s in ordered_swaps:
             if s["dist"] <= trial_dist:
                 position += 1
         ordered_swaps.insert(position, {"dist": trial_dist, "edge": edge, "layout": trial_layout})
         if two_count == width:
+            break"""
+        if 2 in swaps_by_distance and len(swaps_by_distance[2]) == width:
             break
+
+    ordered_swaps = []
+    d = 2
+    for i in range(min(width, len(coupling.get_edges()))):
+        while d not in swaps_by_distance or swaps_by_distance[d] == []:
+            d -= 1
+        r = random.randrange(len(swaps_by_distance[d]))
+        ordered_swaps.append(swaps_by_distance[d][r])
+        del swaps_by_distance[d][r]
 
     score = -10000
     next_nodes = []
