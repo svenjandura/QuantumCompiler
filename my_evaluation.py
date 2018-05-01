@@ -16,13 +16,13 @@ import resource
 # On Windows platform the C++ Simulator is not yet available with pip install
 backend = 'local_qiskit_simulator'
 
-#myres = score(compiler_function, backend = backend)
-#print("Your compiler scored %6.5f x better \
-#and was %6.5f x faster than the QISKit reference compiler." % myres)
+myres = score(compiler_function, backend = backend)
+print("Your compiler scored %6.5f x better \
+and was %6.5f x faster than the QISKit reference compiler." % myres)
 
 # Load example circuits and coupling maps
 
-ex_nr = 1 # examples to add per qubit number. maximum is 10 with the provided circuits
+"""ex_nr = 1 # examples to add per qubit number. maximum is 10 with the provided circuits
 test_circuit_filenames = {}
 
 for i in range(ex_nr):
@@ -39,7 +39,7 @@ test_circuits = {}
 for filename, cmap in test_circuit_filenames.items():
     with open(filename, 'r') as infile:
         qasm = infile.read()
-        test_circuits[filename] = {"qasm": qasm, "coupling_map": cmap}
+        test_circuits[filename] = {"qasm": qasm, "coupling_map": cmap}"""
 
 
 """basis_gates = 'u1,u2,u3,cx,id'
@@ -63,9 +63,9 @@ for name, circuit in test_circuits.items():
     results[name] = {}  # build empty result dict to be filled later
     #compiler_function()"""
 
-result = evaluate(compiler_function, test_circuits, verbose=True, backend = backend)
+#result = evaluate(compiler_function, test_circuits, verbose=True, backend = backend)
 
 #memory_usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 #print(memory_usage)
 
-pprint(result)
+#pprint(result)

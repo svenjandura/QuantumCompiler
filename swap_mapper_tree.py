@@ -11,6 +11,7 @@ DEPTH = 3
 MAX_GATES = 200
 
 def my_swap_mapper_tree(circuit_graph, coupling):
+    random.seed(123)
     gates = read_gates(circuit_graph)
     #gates = circuit_graph.serial_layers()
     qubits = coupling.get_qubits()
@@ -57,6 +58,8 @@ def my_swap_mapper_tree(circuit_graph, coupling):
     for q in circuit_graph.get_qubits():
         end_str += qubit_to_measure_string(last_layout[q], q[1])
     qasm_string = circuit_graph.qasm(decls_only=True)+swap_decl+qasm_string+end_str
+
+    print(qasm_string+"\n")
 
     basis = "u1,u2,u3,cx,id,swap"
     ast = Qasm(data=qasm_string).parse()
